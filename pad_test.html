@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>MATRIXHUNT - PAD TESTER</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #000b1a; color: #0f0; font-family: 'Courier New', monospace; text-align: center; padding: 15px; overflow-x: hidden; }
+h1 { color: #0f0; letter-spacing: 8px; font-size: 20px; margin-bottom: 5px; text-shadow: 0 0 10px #0f0; }
+.subtitle { color: #060; font-size: 10px; letter-spacing: 3px; margin-bottom: 15px; }
+.status { color: #ff0; font-size: 14px; padding: 8px; border: 1px solid #660; margin-bottom: 15px; border-radius: 3px; }
+.status.connected { color: #0f0; border-color: #0f0; }
+.status.disconnected { color: #f00; border-color: #f00; }
+
+.section { margin-bottom: 15px; }
+.section-title { color: #060; font-size: 10px; letter-spacing: 3px; margin-bottom: 8px; border-bottom: 1px solid #030; padding-bottom: 3px; }
+
+/* Buttons grid */
+.buttons-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; max-width: 500px; margin: 0 auto; }
+.btn { padding: 12px 8px; border: 2px solid #0a0; border-radius: 5px; background: #001a00; color: #060; font-weight: bold; font-size: 11px; font-family: inherit; transition: all 0.1s; }
+.btn.active { background: #0f0; color: #000; border-color: #0f0; box-shadow: 0 0 15px #0f0; }
+
+/* Analog sticks */
+.analogs-container { display: flex; justify-content: center; gap: 60px; margin: 10px 0; }
+.analog-box { text-align: center; }
+.analog-label { color: #060; font-size: 9px; letter-spacing: 2px; margin-bottom: 5px; }
+.analog-radar { width: 120px; height: 120px; border: 2px solid #0a0; border-radius: 50%; background: #001a00; position: relative; margin: 0 auto; }
+.analog-dot { width: 10px; height: 10px; background: #0f0; border-radius: 50%; position: absolute; transform: translate(-50%, -50%); transition: all 0.05s; box-shadow: 0 0 8px #0f0; }
+.analog-crosshair { position: absolute; background: #030; }
+.analog-crosshair.h { width: 100%; height: 1px; top: 50%; left: 0; }
+.analog-crosshair.v { width: 1px; height: 100%; top: 0; left: 50%; }
+.analog-values { color: #060; font-size: 9px; margin-top: 4px; }
+
+/* Triggers */
+.triggers-container { display: flex; justify-content: center; gap: 20px; margin: 10px 0; }
+.trigger-box { text-align: center; }
+.trigger-label { color: #060; font-size: 9px; letter-spacing: 2px; margin-bottom: 3px; }
+.trigger-bar { width: 80px; height: 14px; border: 1px solid #0a0; background: #001a00; border-radius: 3px; overflow: hidden; }
+.trigger-fill { height: 100%; background: #0f0; width: 0%; transition: width 0.05s; }
+.trigger-value { color: #060; font-size: 9px; margin-top: 2px; }
+
+/* Vibration */
+.vib-section { margin-top: 10px; }
+.vib-btn { padding: 10px 25px; border: 2px solid #ff0; border-radius: 5px; background: #1a1a00; color: #ff0; font-weight: bold; font-size: 11px; font-family: inherit; cursor: pointer; transition: all 0.1s; }
+.vib-btn:hover { background: #ff0; color: #000; }
+
+/* Drift warning */
+.drift-warning { color: #f00; font-size: 10px; font-weight: bold; display: none; margin-top: 5px; }
+
+/* Info */
+.info { color: #030; font-size: 9px; margin-top: 15px; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+
+<h1>PAD TESTER</h1>
+<div class="subtitle">MATRIXHUNT HARDWARE DIAGNOSTIC</div>
+
+<div id="status" class="status disconnected">WAITING FOR GAMEPAD...</div>
+
+<div class="section">
+    <div class="section-title">BUTTONS</div>
+    <div class="buttons-grid" id="buttonsGrid">
+        <div class="btn" id="btn-0">A</div>
+        <div class="btn" id="btn-1">B</div>
+        <div class="btn" id="btn-2">X</div>
+        <div class="btn" id="btn-3">Y</div>
+        <div class="btn" id="btn-4">LB</div>
+        <div class="btn" id="btn-5">RB</div>
+        <div class="btn" id="btn-6">BACK</div>
+        <div class="btn" id="btn-7">START</div>
+        <div class="btn" id="btn-8">LS</div>
+        <div class="btn" id="btn-9">RS</div>
+        <div class="btn" id="btn-12">DPU</div>
+        <div class="btn" id="btn-13">DPD</div>
+        <div class="btn" id="btn-14">DPL</div>
+        <div class="btn" id="btn-15">DPR</div>
+        <div class="btn" id="btn-16">HOME</div>
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-title">ANALOG STICKS</div>
+    <div class="analogs-container">
+        <div class="analog-box">
+            <div class="analog-label">LEFT STICK</div>
+            <div class="analog-radar" id="radarL">
+                <div class="analog-crosshair h"></div>
+                <div class="analog-crosshair v"></div>
+                <div class="analog-dot" id="dotL"></div>
+            </div>
+            <div class="analog-values" id="valL">X: 0.00 Y: 0.00</div>
+            <div class="drift-warning" id="driftL">DRIFT DETECTED!</div>
+        </div>
+        <div class="analog-box">
+            <div class="analog-label">RIGHT STICK</div>
+            <div class="analog-radar" id="radarR">
+                <div class="analog-crosshair h"></div>
+                <div class="analog-crosshair v"></div>
+                <div class="analog-dot" id="dotR"></div>
+            </div>
+            <div class="analog-values" id="valR">X: 0.00 Y: 0.00</div>
+            <div class="drift-warning" id="driftR">DRIFT DETECTED!</div>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-title">TRIGGERS</div>
+    <div class="triggers-container">
+        <div class="trigger-box">
+            <div class="trigger-label">LT</div>
+            <div class="trigger-bar"><div class="trigger-fill" id="ltFill"></div></div>
+            <div class="trigger-value" id="ltVal">0%</div>
+        </div>
+        <div class="trigger-box">
+            <div class="trigger-label">RT</div>
+            <div class="trigger-bar"><div class="trigger-fill" id="rtFill"></div></div>
+            <div class="trigger-value" id="rtVal">0%</div>
+        </div>
+    </div>
+</div>
+
+<div class="section vib-section">
+    <div class="section-title">VIBRATION TEST</div>
+    <button class="vib-btn" id="vibBtn" onclick="testVibration()">ACTIVATE VIBRATION</button>
+</div>
+
+<div class="info">CONNECT PAD VIA USB OR BLUETOOTH / MATRIXHUNT HW DIAG</div>
+
+<script>
+const DRIFT_THRESHOLD = 0.08;
+let padConnected = false;
+let prevButtons = [];
+
+function updateLoop() {
+    const gamepads = navigator.getGamepads();
+    let gp = null;
+    for (let i = 0; i < gamepads.length; i++) {
+        if (gamepads[i]) { gp = gamepads[i]; break; }
+    }
+
+    const statusEl = document.getElementById('status');
+    if (!gp) {
+        if (padConnected) {
+            padConnected = false;
+            statusEl.textContent = 'DISCONNECTED';
+            statusEl.className = 'status disconnected';
+            resetAll();
+        }
+        requestAnimationFrame(updateLoop);
+        return;
+    }
+
+    if (!padConnected) {
+        padConnected = true;
+        statusEl.textContent = 'CONNECTED: ' + gp.id.substring(0, 40);
+        statusEl.className = 'status connected';
+    }
+
+    // Buttons
+    const btnMap = [0,1,2,3,4,5,6,7,8,9,12,13,14,15,16];
+    btnMap.forEach(idx => {
+        const el = document.getElementById('btn-' + idx);
+        if (!el) return;
+        const pressed = gp.buttons[idx] && gp.buttons[idx].pressed;
+        el.className = pressed ? 'btn active' : 'btn';
+    });
+
+    // Left stick
+    if (gp.axes.length >= 2) {
+        updateAnalog('dotL', 'valL', 'driftL', gp.axes[0], gp.axes[1]);
+    }
+    // Right stick
+    if (gp.axes.length >= 4) {
+        updateAnalog('dotR', 'valR', 'driftR', gp.axes[2], gp.axes[3]);
+    }
+
+    // Triggers (axes 2/3 for Xbox, or buttons 6/7 for others)
+    if (gp.axes.length >= 4) {
+        const lt = (gp.axes[2] + 1) / 2;
+        const rt = (gp.axes[3] + 1) / 2;
+        document.getElementById('ltFill').style.width = (lt * 100) + '%';
+        document.getElementById('rtFill').style.width = (rt * 100) + '%';
+        document.getElementById('ltVal').textContent = Math.round(lt * 100) + '%';
+        document.getElementById('rtVal').textContent = Math.round(rt * 100) + '%';
+    } else if (gp.buttons.length >= 8) {
+        const lt = gp.buttons[6] ? gp.buttons[6].value : 0;
+        const rt = gp.buttons[7] ? gp.buttons[7].value : 0;
+        document.getElementById('ltFill').style.width = (lt * 100) + '%';
+        document.getElementById('rtFill').style.width = (rt * 100) + '%';
+        document.getElementById('ltVal').textContent = Math.round(lt * 100) + '%';
+        document.getElementById('rtVal').textContent = Math.round(rt * 100) + '%';
+    }
+
+    prevButtons = gp.buttons.map(b => b.pressed);
+    requestAnimationFrame(updateLoop);
+}
+
+function updateAnalog(dotId, valId, driftId, x, y) {
+    const radar = document.getElementById(dotId).parentElement;
+    const size = radar.offsetWidth / 2;
+    const px = 50 + x * 48;
+    const py = 50 + y * 48;
+    const dot = document.getElementById(dotId);
+    dot.style.left = px + '%';
+    dot.style.top = py + '%';
+
+    document.getElementById(valId).textContent =
+        'X: ' + x.toFixed(3) + ' Y: ' + y.toFixed(3);
+
+    const drift = document.getElementById(driftId);
+    if (Math.abs(x) < DRIFT_THRESHOLD && Math.abs(y) < DRIFT_THRESHOLD) {
+        dot.style.background = '#0f0';
+        dot.style.boxShadow = '0 0 8px #0f0';
+        drift.style.display = 'none';
+    } else {
+        const dist = Math.sqrt(x*x + y*y);
+        if (dist < 0.02) {
+            dot.style.background = '#ff0';
+            dot.style.boxShadow = '0 0 8px #ff0';
+            drift.style.display = 'block';
+        } else {
+            dot.style.background = '#0f0';
+            dot.style.boxShadow = '0 0 8px #0f0';
+            drift.style.display = 'none';
+        }
+    }
+}
+
+function testVibration() {
+    const gamepads = navigator.getGamepads();
+    for (let i = 0; i < gamepads.length; i++) {
+        const gp = gamepads[i];
+        if (gp && gp.vibrationActuator) {
+            gp.vibrationActuator.playEffect('dual-rumble', {
+                duration: 500,
+                strongMagnitude: 1.0,
+                weakMagnitude: 0.8
+            }).catch(() => {});
+            const btn = document.getElementById('vibBtn');
+            btn.textContent = 'VIBRATING...';
+            btn.style.background = '#ff0';
+            btn.style.color = '#000';
+            setTimeout(() => {
+                btn.textContent = 'ACTIVATE VIBRATION';
+                btn.style.background = '#1a1a00';
+                btn.style.color = '#ff0';
+            }, 600);
+            return;
+        }
+    }
+    alert('No vibration-capable gamepad detected!');
+}
+
+function resetAll() {
+    document.querySelectorAll('.btn').forEach(b => b.className = 'btn');
+    document.getElementById('dotL').style.left = '50%';
+    document.getElementById('dotL').style.top = '50%';
+    document.getElementById('dotR').style.left = '50%';
+    document.getElementById('dotR').style.top = '50%';
+    document.getElementById('valL').textContent = 'X: 0.00 Y: 0.00';
+    document.getElementById('valR').textContent = 'X: 0.00 Y: 0.00';
+    document.getElementById('ltFill').style.width = '0%';
+    document.getElementById('rtFill').style.width = '0%';
+    document.getElementById('ltVal').textContent = '0%';
+    document.getElementById('rtVal').textContent = '0%';
+    document.getElementById('driftL').style.display = 'none';
+    document.getElementById('driftR').style.display = 'none';
+}
+
+window.addEventListener('gamepadconnected', () => {
+    padConnected = false;
+});
+window.addEventListener('gamepaddisconnected', () => {
+    padConnected = false;
+    document.getElementById('status').textContent = 'DISCONNECTED';
+    document.getElementById('status').className = 'status disconnected';
+    resetAll();
+});
+
+requestAnimationFrame(updateLoop);
+</script>
+</body>
+</html>
